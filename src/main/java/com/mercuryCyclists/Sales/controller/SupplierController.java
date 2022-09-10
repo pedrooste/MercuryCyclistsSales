@@ -4,6 +4,7 @@ import com.mercuryCyclists.Sales.entity.Contact;
 import com.mercuryCyclists.Sales.service.SupplierService;
 import com.mercuryCyclists.Sales.entity.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,9 +19,12 @@ public class SupplierController {
 
     private final SupplierService supplierService;
 
+    private KafkaTemplate<String, String> kafkaTemplate;
+
     @Autowired
-    public SupplierController(SupplierService supplierService) {
+    public SupplierController(SupplierService supplierService, KafkaTemplate<String, String> kafkaTemplate) {
         this.supplierService = supplierService;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     /**
@@ -86,5 +90,14 @@ public class SupplierController {
     @DeleteMapping(path = "/{supplierId}/contact/{contactId}")
     public Supplier deleteSupplierContact(@PathVariable("supplierId") Long supplierId, @PathVariable("contactId") Long contactId) {
         return supplierService.deleteContact(supplierId, contactId);
+    }
+
+    /**
+     * Dummy kafka publisher
+     */
+    @PostMapping(path = "/kafka")
+    public void publishKafkaMessage(@RequestBody Supplier supplier) {
+        Supplier resp = supplierService.registerSupplier(supplier);
+        kafkaTemplate.send("pedro", resp.toString());
     }
 }
