@@ -62,4 +62,12 @@ public class InStoreSaleController {
         //if the sale exists get the product associated with the sale by ID
         return inStoreSaleService.getProductBySaleId(s);
     }
+
+    /**
+     * Create backorder for in store sale
+     */
+    @PostMapping(path = "/backorder/store/{storeId}")
+    public InStoreSale createBackorder(@RequestBody InStoreSale inStoreSale, @PathVariable("storeId") Long storeId) {
+        return inStoreSaleService.registerBackorder(inStoreSale, storeId);
+    }
 }
