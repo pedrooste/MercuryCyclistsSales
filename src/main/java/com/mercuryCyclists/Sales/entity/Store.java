@@ -32,9 +32,6 @@ public class Store {
     private Set<InStoreSale> inStoreSales = new LinkedHashSet<>();
 
     public boolean validate(){
-        if (address == null || manager == null){
-            return false;
-        }
-        return true;
+        return address != null && manager != null;
     }
 }

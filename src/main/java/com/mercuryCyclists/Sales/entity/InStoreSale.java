@@ -15,32 +15,25 @@ import java.util.Objects;
 @Setter
 @Entity
 @Table(name = "in_store_sale")
-public class InStoreSale {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
-    @Column(name = "receipt_no")
+public class InStoreSale extends Sale{
+    // receiptNo should be unique???
+    @Column(name = "receipt_no", unique = true)
     private Integer receiptNo;
 
     public boolean validate(){
-        if (receiptNo == null){
-            return false;
-        }
-        return true;
+        return receiptNo != null;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         InStoreSale that = (InStoreSale) o;
-        return id != null && Objects.equals(id, that.id);
+        return Objects.equals(receiptNo, that.receiptNo);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(receiptNo);
     }
 }
