@@ -16,9 +16,12 @@ import java.util.Objects;
 @Entity
 @Table(name = "in_store_sale")
 public class InStoreSale extends Sale{
-    // receiptNo should be unique???
     @Column(name = "receipt_no", unique = true)
     private Integer receiptNo;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "store_id", referencedColumnName = "id")
+    private Store store;
 
     public boolean validate(){
         return receiptNo != null;
