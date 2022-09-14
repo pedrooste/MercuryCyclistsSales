@@ -1,5 +1,6 @@
 package com.mercuryCyclists.Sales.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import javax.persistence.*;
@@ -26,6 +27,7 @@ public abstract class Sale {
     private Long quantity;
 
     @Column(name = "date_time")
+    @JsonFormat(pattern="dd/MM/yy")
     private Date dateTime;
 
     protected boolean validate(){

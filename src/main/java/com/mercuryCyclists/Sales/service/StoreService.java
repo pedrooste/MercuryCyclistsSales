@@ -18,7 +18,8 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final InStoreSaleRepository inStoreSaleRepository;
 
-    @Autowired StoreService(StoreRepository storeRepository, InStoreSaleRepository inStoreSaleRepository) {
+    @Autowired
+    StoreService(StoreRepository storeRepository, InStoreSaleRepository inStoreSaleRepository) {
         this.storeRepository = storeRepository;
         this.inStoreSaleRepository = inStoreSaleRepository;
     }
@@ -29,22 +30,6 @@ public class StoreService {
     public List<Store> getAllStores() {
         return storeRepository.findAll();
     }
-
-//    Sitting for reference will remove once other parts are incorp
-//    /**
-//     * Gets In Store Sales by Store ID
-//     */
-//    public List<InStoreSale> getStoreSales(Long storeId) {
-//        Optional<Store> store = storeRepository.findById(storeId);
-//
-//        if (!store.isPresent()) {
-//            throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
-//        }
-//
-//        // If the current return doesn't work try the commented out one (needs to be cast)
-//        // return storeRepository.findById(storeId).get().getInStoreSales();
-//        return new ArrayList<>(store.get().getInStoreSales());
-//    }
 
     /**
      * Register a new Store
