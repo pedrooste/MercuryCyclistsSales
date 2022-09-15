@@ -18,17 +18,16 @@ public abstract class Sale {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "sale_id", nullable = false)
-    private Long saleId;
+    private Long id;
 
-    @Column(name = "product_id", unique = true)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
     @Column(name = "quantity")
     private Long quantity;
 
     @Column(name = "date_time")
-    @JsonFormat(pattern="dd/MM/yy")
-    private Date dateTime;
+    private Date dateTime = new Date(System.currentTimeMillis());
 
     protected boolean validate(){
         return quantity != null && dateTime != null;

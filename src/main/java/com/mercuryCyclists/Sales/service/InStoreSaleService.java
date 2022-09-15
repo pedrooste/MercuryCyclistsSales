@@ -1,5 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
+import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
@@ -15,11 +16,13 @@ public class InStoreSaleService {
 
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
+    private final SaleService saleService;
 
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
+        this.saleService = saleService;
     }
 
     /**
@@ -82,6 +85,11 @@ public class InStoreSaleService {
     public InStoreSale updateInStoreSale(InStoreSale inStoreSale, Long inStoreSaleId) {
         if (!inStoreSale.validate()) {
             throw new IllegalStateException("Invalid in store sale");
+        }
+
+        JsonObject product = saleService.getSaleProduct(inStoreSale);
+        if(product.get("id") == null){
+            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
         }
 
         Optional<InStoreSale> existingInSoreSale = inStoreSaleRepository.findById(inStoreSaleId);
