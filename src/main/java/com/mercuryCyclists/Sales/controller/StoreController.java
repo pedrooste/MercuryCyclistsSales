@@ -3,6 +3,8 @@ package com.mercuryCyclists.Sales.controller;
 
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.Store;
+import com.mercuryCyclists.Sales.service.InStoreSaleService;
+import com.mercuryCyclists.Sales.service.OnlineSaleService;
 import com.mercuryCyclists.Sales.service.StoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +21,13 @@ import java.util.List;
 public class StoreController {
 
     private final StoreService storeService;
+    private InStoreSaleService inStoreSaleService;
 
     @Autowired
-    public StoreController(StoreService storeService) {
+    public StoreController(StoreService storeService, InStoreSaleService inStoreSaleService, OnlineSaleService onlineSaleService) {
         this.storeService = storeService;
+        this.inStoreSaleService = inStoreSaleService;
+
     }
 
     /**
