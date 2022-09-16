@@ -61,6 +61,9 @@ public class SaleService {
         }
     }
 
+    /**
+     * Updates a product from a product JsonObject
+     */
     void updateProduct(JsonObject product) {
         Map<String, String> params = new HashMap<>();
         params.put("productId", product.get("id").toString());
@@ -75,6 +78,9 @@ public class SaleService {
         }
     }
 
+    /**
+     * Updates a product's part from a part JsonObject
+     */
     void updateProductPart(JsonObject part) {
         Map<String, String> params = new HashMap<>();
         params.put("partId", part.get("id").toString());

@@ -1,6 +1,5 @@
 package com.mercuryCyclists.Sales.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import javax.persistence.*;
@@ -13,6 +12,7 @@ import java.sql.Date;
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString
 @MappedSuperclass
 public abstract class Sale {
     @Id
@@ -30,6 +30,6 @@ public abstract class Sale {
     private Date dateTime = new Date(System.currentTimeMillis());
 
     protected boolean validate(){
-        return quantity != null && dateTime != null;
+        return quantity != null && dateTime != null && quantity <= 0;
     }
 }

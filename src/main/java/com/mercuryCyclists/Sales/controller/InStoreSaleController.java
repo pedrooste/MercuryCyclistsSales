@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller for in store sale
+ */
+
 @CrossOrigin
 @RestController
 @RequestMapping(path = "api/v1/in-store-sale")
@@ -40,40 +44,8 @@ public class InStoreSaleController {
      * Register a new In Store Sale
      */
     @PostMapping(path = "/store/{storeId}")
-    public ResponseEntity<InStoreSale> registerInStoreSale(@RequestBody InStoreSale inStoreSale,
+    public ResponseEntity<String> registerInStoreSale(@RequestBody InStoreSale inStoreSale,
                                                            @PathVariable("storeId") Long storeId) {
         return inStoreSaleService.registerInStoreSale(inStoreSale, storeId);
-    }
-
-    /**
-     * Add store to in store sale
-     */
-    @PostMapping(path = "/{inStoreSaleId}/store/{storeId}/add-store")
-    public InStoreSale addStoreToInStoreSale(@PathVariable("inStoreSaleId") Long inStoreSaleId,
-                                             @PathVariable("storeId") Long storeId) {
-        return inStoreSaleService.addStoreToInStoreSale(inStoreSaleId, storeId);
-    }
-
-    /**
-     * Updates existing in store sale based on the in store sale given
-     */
-    @PutMapping(path = "/{inStoreSaleId}")
-    public InStoreSale updateInStoreSale(@RequestBody InStoreSale inStoreSale,
-                                         @PathVariable("inStoreSaleId") Long inStoreSaleId) {
-        return inStoreSaleService.updateInStoreSale(inStoreSale, inStoreSaleId);
-    }
-
-    /**
-     * Deletes existing in store sale based on ID
-     */
-    @DeleteMapping(path = "/{inStoreSaleId}")
-    public void deleteInStoreSale(@PathVariable("inStoreSaleId") Long inStoreSaleId) {
-        inStoreSaleService.deleteInStoreSale(inStoreSaleId);
-    }
-
-    // TODO: DELETE
-    @GetMapping(path = "/test")
-    public InStoreSale getTest() {
-        return inStoreSaleService.getTest(new Long(1));
     }
 }

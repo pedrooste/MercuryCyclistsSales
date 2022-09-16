@@ -13,9 +13,10 @@ import java.util.Objects;
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString
 @Entity
 @Table(name = "in_store_sale")
-public class InStoreSale extends Sale{
+public class InStoreSale extends Sale {
     @Column(name = "receipt_no", unique = true)
     private Integer receiptNo;
 

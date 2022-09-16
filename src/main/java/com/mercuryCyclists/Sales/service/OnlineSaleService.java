@@ -3,8 +3,8 @@ package com.mercuryCyclists.Sales.service;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
-import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Optional;
+import java.util.List;
+
+/**
+ * Service for online sale
+ */
 
 @Service
 public class OnlineSaleService {
@@ -27,17 +31,19 @@ public class OnlineSaleService {
     }
 
     /**
+     * Gets all Online Sales
+     */
+    public List<OnlineSale> GetOnlineSales() {
+        return onlineSaleRepository.findAll();
+    }
+
+    /**
      * Register a new Online Sale
      */
-    public ResponseEntity<OnlineSale> registerOnlineSale(OnlineSale onlineSale) {
+    public ResponseEntity<String> registerOnlineSale(OnlineSale onlineSale) {
         // Validate sale
         if (!onlineSale.validate()) {
             throw new IllegalStateException("Invalid Online Sale");
-        }
-
-        // Do after first validation in case quantity is null
-        if (onlineSale.getQuantity() <= 0) {
-            throw new IllegalStateException("Online Sale has 0 or a negative quantity");
         }
 
         // Check product exists
@@ -56,7 +62,7 @@ public class OnlineSaleService {
 
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
-            return new ResponseEntity<>(onlineSale, HttpStatus.CREATED);
+            return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         } else {
             // Get product parts
             JsonArray productParts = saleService.getSaleProductParts(onlineSale);
@@ -76,7 +82,7 @@ public class OnlineSaleService {
                     partJsonObjs.add(partJsonObj);
                 } else {
                     // return 303 Error
-                    return new ResponseEntity<>(onlineSale, HttpStatus.SEE_OTHER);
+                    return new ResponseEntity<>("api/v1/online/online-sale/backorder", HttpStatus.SEE_OTHER);
                 }
             }
 
@@ -88,7 +94,7 @@ public class OnlineSaleService {
 
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
-            return new ResponseEntity<>(onlineSale, HttpStatus.CREATED);
+            return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         }
     }
 }

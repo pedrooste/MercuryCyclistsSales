@@ -16,6 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for in store sale
+ */
+
 @Service
 public class InStoreSaleService {
 
@@ -53,15 +57,10 @@ public class InStoreSaleService {
     /**
      * Register a new In Store Sale
      */
-    public ResponseEntity<InStoreSale> registerInStoreSale(InStoreSale inStoreSale, Long storeId) {
+    public ResponseEntity<String> registerInStoreSale(InStoreSale inStoreSale, Long storeId) {
         // Validate sale
         if (!inStoreSale.validate()) {
             throw new IllegalStateException("Invalid In Store Sale");
-        }
-
-        // Do after first validation in case quantity is null
-        if (inStoreSale.getQuantity() <= 0) {
-            throw new IllegalStateException("In Store Sale has 0 or a negative quantity");
         }
 
         // Check if store exists
@@ -87,7 +86,7 @@ public class InStoreSaleService {
             // Save and return sale
             inStoreSale.setStore(store.get());
             inStoreSaleRepository.save(inStoreSale);
-            return new ResponseEntity<>(inStoreSale, HttpStatus.CREATED);
+            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
         } else {
             // Get product parts
             JsonArray productParts = saleService.getSaleProductParts(inStoreSale);
@@ -107,7 +106,7 @@ public class InStoreSaleService {
                     partJsonObjs.add(partJsonObj);
                 } else {
                     // return 303 Error
-                    return new ResponseEntity<>(inStoreSale, HttpStatus.SEE_OTHER);
+                    return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
                 }
             }
 
@@ -120,84 +119,7 @@ public class InStoreSaleService {
             // Save and return sale
             inStoreSale.setStore(store.get());
             inStoreSaleRepository.save(inStoreSale);
-            return new ResponseEntity<>(inStoreSale, HttpStatus.CREATED);
+            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
         }
-    }
-
-    /**
-     * Add store to in store sale
-     */
-    public InStoreSale addStoreToInStoreSale(Long inStoreSaleId, Long storeId) {
-        Optional<InStoreSale> inStoreSale = inStoreSaleRepository.findById(inStoreSaleId);
-        if (!inStoreSale.isPresent()) {
-            throw new IllegalStateException(String.format("In Store Sale with Id %s does not exist", inStoreSaleId));
-        }
-
-        Optional<Store> store = storeRepository.findById(storeId);
-        if (!store.isPresent()) {
-            throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
-        }
-
-        InStoreSale inStoreSaleObj = inStoreSale.get();
-        Store storeObj = store.get();
-
-        inStoreSaleObj.setStore(storeObj);
-        inStoreSaleRepository.save(inStoreSaleObj);
-        return inStoreSaleObj;
-    }
-
-    /**
-     * Updates existing in store sale based on the in store sale given
-     */
-    public InStoreSale updateInStoreSale(InStoreSale inStoreSale, Long inStoreSaleId) {
-        if (!inStoreSale.validate()) {
-            throw new IllegalStateException("Invalid in store sale");
-        }
-
-        JsonObject product = saleService.getSaleProduct(inStoreSale);
-        if(product.get("id") == null){
-            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
-        }
-
-        Optional<InStoreSale> existingInSoreSale = inStoreSaleRepository.findById(inStoreSaleId);
-        if (!existingInSoreSale.isPresent()) {
-            throw new IllegalStateException(String.format("in store sale with Id %s does not exist", inStoreSaleId));
-        }
-
-        inStoreSaleRepository.save(inStoreSale);
-        return inStoreSale;
-    }
-
-    /**
-     * Deletes existing in store sale based on ID
-     */
-    public void deleteInStoreSale(Long inStoreSaleId) {
-        Optional<InStoreSale> existingInSoreSale = inStoreSaleRepository.findById(inStoreSaleId);
-        if (!existingInSoreSale.isPresent()) {
-            throw new IllegalStateException(String.format("in store sale with Id %s does not exist", inStoreSaleId));
-        }
-
-        inStoreSaleRepository.delete(existingInSoreSale.get());
-    }
-
-    // TODO: DELETE
-    public InStoreSale getTest(Long aLong) {
-        Optional<InStoreSale> inStoreSale = inStoreSaleRepository.findById(aLong);
-        JsonArray productParts = saleService.getSaleProductParts(inStoreSale.get());
-
-        System.out.println("in get test");
-        System.out.println(productParts);
-
-        System.out.println(productParts.get(0));
-        System.out.println(productParts.get(1));
-
-        JsonObject t = productParts.get(0).getAsJsonObject();
-        t.addProperty("description", "ahahhahahahahahahahahhahahahahha");
-
-        System.out.println(t);
-
-        saleService.updateProductPart(t);
-
-        return inStoreSale.get();
     }
 }
