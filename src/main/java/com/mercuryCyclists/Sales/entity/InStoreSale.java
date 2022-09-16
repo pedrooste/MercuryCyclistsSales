@@ -13,15 +13,19 @@ import java.util.Objects;
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString
 @Entity
 @Table(name = "in_store_sale")
-public class InStoreSale extends Sale{
-    // receiptNo should be unique???
+public class InStoreSale extends Sale {
     @Column(name = "receipt_no", unique = true)
     private Integer receiptNo;
 
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "store_id", referencedColumnName = "id")
+    private Store store;
+
     public boolean validate(){
-        return receiptNo != null;
+        return super.validate() && receiptNo != null;
     }
 
     @Override

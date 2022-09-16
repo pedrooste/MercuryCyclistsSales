@@ -34,15 +34,6 @@ public class StoreController {
     }
 
     /**
-     * Gets In Store Sales by Store ID
-     */
-    // TODO Test properly
-    @GetMapping(path = "/{storeId}/sales")
-    public List<InStoreSale> getStoreSales(@PathVariable("storeId") Long storeId) {
-        return storeService.getStoreSales(storeId);
-    }
-
-    /**
      * Register a new Store
      */
     @PostMapping()
@@ -53,9 +44,9 @@ public class StoreController {
     /**
      * Updates existing store based on the store given
      */
-    @PutMapping()
-    public Store updateStore(@RequestBody Store store) {
-        return storeService.updateStore(store);
+    @PutMapping(path = "/{storeId}")
+    public Store updateStore(@RequestBody Store store, @PathVariable("storeId") Long storeId) {
+        return storeService.updateStore(store, storeId);
     }
 
     /**

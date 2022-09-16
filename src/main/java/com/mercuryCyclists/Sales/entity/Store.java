@@ -27,10 +27,6 @@ public class Store {
     @Column(name = "manager")
     private String manager;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "store_id", referencedColumnName = "id")
-    private Set<InStoreSale> inStoreSales = new LinkedHashSet<>();
-
     public boolean validate(){
         return address != null && manager != null;
     }
