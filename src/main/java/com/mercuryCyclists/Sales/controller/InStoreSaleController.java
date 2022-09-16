@@ -3,6 +3,7 @@ package com.mercuryCyclists.Sales.controller;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.service.InStoreSaleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,9 +39,10 @@ public class InStoreSaleController {
     /**
      * Register a new In Store Sale
      */
-    @PostMapping
-    public InStoreSale registerInStoreSale(@RequestBody InStoreSale inStoreSale) {
-        return inStoreSaleService.registerInStoreSale(inStoreSale);
+    @PostMapping(path = "/store/{storeId}")
+    public ResponseEntity<InStoreSale> registerInStoreSale(@RequestBody InStoreSale inStoreSale,
+                                                           @PathVariable("storeId") Long storeId) {
+        return inStoreSaleService.registerInStoreSale(inStoreSale, storeId);
     }
 
     /**
@@ -67,5 +69,11 @@ public class InStoreSaleController {
     @DeleteMapping(path = "/{inStoreSaleId}")
     public void deleteInStoreSale(@PathVariable("inStoreSaleId") Long inStoreSaleId) {
         inStoreSaleService.deleteInStoreSale(inStoreSaleId);
+    }
+
+    // TODO: DELETE
+    @GetMapping(path = "/test")
+    public InStoreSale getTest() {
+        return inStoreSaleService.getTest(new Long(1));
     }
 }

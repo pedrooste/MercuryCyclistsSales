@@ -24,7 +24,7 @@ public class InStoreSale extends Sale{
     private Store store;
 
     public boolean validate(){
-        return receiptNo != null;
+        return super.validate() && receiptNo != null;
     }
 
     @Override

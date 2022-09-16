@@ -1,13 +1,18 @@
 package com.mercuryCyclists.Sales.service;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
 import com.mercuryCyclists.Sales.repository.StoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,15 +51,77 @@ public class InStoreSaleService {
     }
 
     /**
-     * Register a new Store
+     * Register a new In Store Sale
      */
-    public InStoreSale registerInStoreSale(InStoreSale inStoreSale) {
-       if (!inStoreSale.validate()) {
-           throw new IllegalStateException("Invalid store");
-       }
+    public ResponseEntity<InStoreSale> registerInStoreSale(InStoreSale inStoreSale, Long storeId) {
+        // Validate sale
+        if (!inStoreSale.validate()) {
+            throw new IllegalStateException("Invalid In Store Sale");
+        }
 
-       inStoreSaleRepository.save(inStoreSale);
-       return inStoreSale;
+        // Do after first validation in case quantity is null
+        if (inStoreSale.getQuantity() <= 0) {
+            throw new IllegalStateException("In Store Sale has 0 or a negative quantity");
+        }
+
+        // Check if store exists
+        Optional<Store> store = storeRepository.findById(storeId);
+        if (!store.isPresent()) {
+            throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
+        }
+
+        // Check product exists
+        JsonObject product = saleService.getSaleProduct(inStoreSale);
+        if(product.get("id") == null){
+            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
+        }
+
+        // If there is enough of the product is stock
+        Long productQuantity = product.get("quantity").getAsLong();
+        Long saleQuantity = inStoreSale.getQuantity();
+        if (productQuantity >= saleQuantity) {
+            // Update and save product
+            product.addProperty("quantity", (productQuantity - saleQuantity));
+            saleService.updateProduct(product);
+
+            // Save and return sale
+            inStoreSale.setStore(store.get());
+            inStoreSaleRepository.save(inStoreSale);
+            return new ResponseEntity<>(inStoreSale, HttpStatus.CREATED);
+        } else {
+            // Get product parts
+            JsonArray productParts = saleService.getSaleProductParts(inStoreSale);
+            ArrayList<JsonObject> partJsonObjs = new ArrayList<JsonObject>();
+
+            // For each part in the product
+            for (JsonElement part : productParts) {
+                // Convert json element to json object
+                JsonObject partJsonObj = part.getAsJsonObject();
+
+                Long partQuantity = partJsonObj.get("quantity").getAsLong();
+                if (partQuantity >= saleQuantity) {
+                    // Update part quantity
+                    partJsonObj.addProperty("quantity", (partQuantity - saleQuantity));
+
+                    // Save to ArrayList of JsonObjects
+                    partJsonObjs.add(partJsonObj);
+                } else {
+                    // return 303 Error
+                    return new ResponseEntity<>(inStoreSale, HttpStatus.SEE_OTHER);
+                }
+            }
+
+            // For each json object part in json object part array list
+            // Save the json object part
+            for (JsonObject part : partJsonObjs) {
+                saleService.updateProductPart(part);
+            }
+
+            // Save and return sale
+            inStoreSale.setStore(store.get());
+            inStoreSaleRepository.save(inStoreSale);
+            return new ResponseEntity<>(inStoreSale, HttpStatus.CREATED);
+        }
     }
 
     /**
@@ -111,5 +178,26 @@ public class InStoreSaleService {
         }
 
         inStoreSaleRepository.delete(existingInSoreSale.get());
+    }
+
+    // TODO: DELETE
+    public InStoreSale getTest(Long aLong) {
+        Optional<InStoreSale> inStoreSale = inStoreSaleRepository.findById(aLong);
+        JsonArray productParts = saleService.getSaleProductParts(inStoreSale.get());
+
+        System.out.println("in get test");
+        System.out.println(productParts);
+
+        System.out.println(productParts.get(0));
+        System.out.println(productParts.get(1));
+
+        JsonObject t = productParts.get(0).getAsJsonObject();
+        t.addProperty("description", "ahahhahahahahahahahahhahahahahha");
+
+        System.out.println(t);
+
+        saleService.updateProductPart(t);
+
+        return inStoreSale.get();
     }
 }
