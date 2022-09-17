@@ -1,6 +1,7 @@
 package com.mercuryCyclists.Sales.controller;
 
 import com.mercuryCyclists.Sales.entity.InStoreSale;
+import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.service.InStoreSaleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +48,18 @@ public class InStoreSaleController {
     public ResponseEntity<String> registerInStoreSale(@RequestBody InStoreSale inStoreSale,
                                                            @PathVariable("storeId") Long storeId) {
         return inStoreSaleService.registerInStoreSale(inStoreSale, storeId);
+    }
+
+    /**
+     * Get product by sale
+     * @param id
+     * @return
+     */
+    @GetMapping(path = "{id}/product")
+    public ResponseEntity<String> getProductBySale(@PathVariable("id") Long id)  {
+        //check that the sale exists
+        InStoreSale s = inStoreSaleService.getInstoreSale(id);
+        //if the sale exists get the product associated with the sale by ID
+        return inStoreSaleService.getProductBySaleId(s);
     }
 }

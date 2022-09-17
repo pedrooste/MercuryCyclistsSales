@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
+import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
 import com.mercuryCyclists.Sales.repository.StoreRepository;
@@ -11,10 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service for in store sale
@@ -26,6 +26,8 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
+    private static RestTemplate restTemplate = new RestTemplate();
+    private static final String GETPRODUCTAPI = "http://localhost:8081/api/v1/product/{productId}";
 
     @Autowired
     public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
@@ -39,6 +41,32 @@ public class InStoreSaleService {
      */
     public List<InStoreSale> getAllInStoreSales() {
         return inStoreSaleRepository.findAll();
+    }
+
+    /**
+     * Get sale by id
+     */
+    public InStoreSale getInstoreSale(Long id) {
+
+        Optional<InStoreSale> s = inStoreSaleRepository.findById(id);
+        if(!s.isPresent()) {
+            throw new IllegalArgumentException("Sale with ID does not exist");
+        }
+        return s.get();
+    }
+
+    /**
+     * Get Product by sale
+     */
+    public ResponseEntity<String> getProductBySaleId(InStoreSale s) {
+        if(s == null) {
+            return new ResponseEntity<>("Invalid Sale Id", HttpStatus.FAILED_DEPENDENCY);
+        }
+        //query product endpoint with productID
+        Map<String, Long> param = new HashMap<>();
+        param.put("productId", s.getProductId());
+        String result = restTemplate.getForObject(GETPRODUCTAPI, String.class, param);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     /**
