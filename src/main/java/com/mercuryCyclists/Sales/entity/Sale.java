@@ -17,7 +17,7 @@ import java.sql.Date;
 public abstract class Sale {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "sale_id", nullable = false)
+    @Column(name = "sale_id")
     private Long id;
 
     @Column(name = "product_id", nullable = false)
@@ -30,6 +30,6 @@ public abstract class Sale {
     private Date dateTime = new Date(System.currentTimeMillis());
 
     protected boolean validate(){
-        return quantity != null && dateTime != null && quantity <= 0;
+        return dateTime != null && quantity >= 0;
     }
 }
