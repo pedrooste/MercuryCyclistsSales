@@ -46,7 +46,7 @@ public class InStoreSaleService {
     /**
      * Get sale by id
      */
-    public InStoreSale git getInstoreSale(Long id) {
+    public InStoreSale getInstoreSale(Long id) {
 
         Optional<InStoreSale> s = inStoreSaleRepository.findById(id);
         if(!s.isPresent()) {
