@@ -40,4 +40,17 @@ public class OnlineSaleController {
     public ResponseEntity<String> registerOnlineSale(@RequestBody OnlineSale onlineSale) {
         return onlineSaleService.registerOnlineSale(onlineSale);
     }
+
+    /**
+     * Get product by sale
+     * @param id
+     * @return
+     */
+    @GetMapping(path = "{id}/product")
+    public ResponseEntity<String> getProductBySale(@PathVariable("id") Long id)  {
+        //check that the sale exists
+        OnlineSale s = onlineSaleService.getOnlineSale(id);
+        //if the sale exists get the product associated with the sale by ID
+        return onlineSaleService.getProductBySaleId(s);
+    }
 }
