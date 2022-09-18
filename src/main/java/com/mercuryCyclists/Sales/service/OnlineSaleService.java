@@ -72,17 +72,15 @@ public class OnlineSaleService {
     public ResponseEntity<String> registerOnlineSale(OnlineSale onlineSale) {
         // Validate sale
 
-//        if (!onlineSale.validate()) {
-//            throw new IllegalStateException("Invalid Online Sale");
-//        }
+        if (!onlineSale.validate()) {
+            throw new IllegalStateException("Invalid Online Sale");
+        }
 
         // Check product exists
         JsonObject product = saleService.getSaleProduct(onlineSale);
         if(product.get("id") == null){
             throw new IllegalArgumentException(String.format("Invalid product, %s", product));
         }
-        System.out.println("Product id = : " + product.get("id" ));
-        System.out.println("Product here ----------" + product.toString());
         // If there is enough of the product is stock
         Long productQuantity = product.get("quantity").getAsLong();
         Long saleQuantity = onlineSale.getQuantity();
