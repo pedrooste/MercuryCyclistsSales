@@ -6,15 +6,14 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
-
 /**
  * OnlineSale Entity / DAO
  */
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Getter
 @Setter
-@ToString
 @Entity
 @Table(name = "online_sale")
 public class OnlineSale extends Sale {
@@ -29,3 +28,4 @@ public class OnlineSale extends Sale {
     }
 
 }
+

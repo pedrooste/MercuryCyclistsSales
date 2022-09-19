@@ -1,6 +1,5 @@
 package com.mercuryCyclists.Sales.controller;
 
-import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.service.OnlineSaleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,14 @@ public class OnlineSaleController {
     @Autowired
     public OnlineSaleController(OnlineSaleService onlineSaleService) {
         this.onlineSaleService = onlineSaleService;
+    }
+
+    /**
+     * Create backorder for online sale
+     */
+    @PostMapping(path = "/backorder")
+    public OnlineSale createBackorder(@RequestBody OnlineSale onlineSale) {
+        return onlineSaleService.registerBackorder(onlineSale);
     }
 
     /**

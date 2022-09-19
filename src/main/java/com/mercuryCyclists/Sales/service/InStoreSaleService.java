@@ -1,5 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,6 +12,7 @@ import com.mercuryCyclists.Sales.repository.StoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,14 +28,14 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
-    private static RestTemplate restTemplate = new RestTemplate();
-    private static final String GETPRODUCTAPI = "http://localhost:8081/api/v1/product/{productId}";
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     /**
@@ -63,10 +65,7 @@ public class InStoreSaleService {
             return new ResponseEntity<>("Invalid Sale Id", HttpStatus.FAILED_DEPENDENCY);
         }
         //query product endpoint with productID
-        Map<String, Long> param = new HashMap<>();
-        param.put("productId", s.getProductId());
-        String result = restTemplate.getForObject(GETPRODUCTAPI, String.class, param);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return new ResponseEntity<>(saleService.getSaleProduct(s).toString(), HttpStatus.OK);
     }
 
     /**
@@ -149,5 +148,35 @@ public class InStoreSaleService {
             inStoreSaleRepository.save(inStoreSale);
             return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
         }
+    }
+
+    /**
+     * Registers backorder
+     * Validates the sale
+     * Gets the sale's product, validates it exists
+     * saves online sale and publishes to kafka
+     * @param inStoreSale backorder to be saved
+     */
+    public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId){
+        if (!inStoreSale.validate()) {
+            throw new IllegalStateException("Invalid online sale");
+        }
+
+        Optional<Store> store = storeRepository.findById(storeId);
+        if (!store.isPresent()) {
+            throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
+        }
+
+        JsonObject product = saleService.getSaleProduct(inStoreSale);
+        if(product.get("id") == null){
+            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
+        }
+
+        inStoreSaleRepository.save(inStoreSale);
+
+        String msg = new Gson().toJson(inStoreSale);
+        kafkaTemplate.send("backorder", msg);
+
+        return inStoreSale;
     }
 }
