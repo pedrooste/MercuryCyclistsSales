@@ -30,9 +30,6 @@ public class InStoreSaleService {
     private final SaleService saleService;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private static RestTemplate restTemplate = new RestTemplate();
-    private static final String GETPRODUCTAPI = "http://localhost:8081/api/v1/product/{productId}";
-
     @Autowired
     public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
         this.inStoreSaleRepository = inStoreSaleRepository;
@@ -68,10 +65,7 @@ public class InStoreSaleService {
             return new ResponseEntity<>("Invalid Sale Id", HttpStatus.FAILED_DEPENDENCY);
         }
         //query product endpoint with productID
-        Map<String, Long> param = new HashMap<>();
-        param.put("productId", s.getProductId());
-        String result = restTemplate.getForObject(GETPRODUCTAPI, String.class, param);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return new ResponseEntity<>(saleService.getSaleProduct(s).toString(), HttpStatus.OK);
     }
 
     /**
