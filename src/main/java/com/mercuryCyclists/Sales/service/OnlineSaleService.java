@@ -43,7 +43,7 @@ public class OnlineSaleService {
     /**
      * Get sale by id
      */
-    public OnlineSale getOnlineSale(Long id) {
+    public OnlineSale getOnlineSale(UUID id) {
 
         Optional<OnlineSale> s = onlineSaleRepository.findById(id);
         if(!s.isPresent()) {

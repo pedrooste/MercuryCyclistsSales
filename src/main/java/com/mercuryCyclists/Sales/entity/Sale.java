@@ -1,9 +1,11 @@
 package com.mercuryCyclists.Sales.entity;
 
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.sql.Date;
+import java.util.UUID;
 
 /**
  * Sale Entity / DAO
@@ -16,9 +18,10 @@ import java.sql.Date;
 @MappedSuperclass
 public abstract class Sale {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
+    @Type(type="uuid-char")
     @Column(name = "sale_id")
-    private Long id;
+    private UUID id;
 
     @Column(name = "product_id", nullable = false)
     private Long productId;
