@@ -1,9 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
 import org.hibernate.ObjectNotFoundException;
@@ -25,13 +22,13 @@ public class OnlineSaleService {
 
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
+    private static final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
-    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
+    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService) {
         this.onlineSaleRepository = onlineSaleRepository;
         this.saleService = saleService;
-        this.kafkaTemplate = kafkaTemplate;
     }
 
     /**
@@ -143,9 +140,21 @@ public class OnlineSaleService {
         }
 
         onlineSaleRepository.save(onlineSale);
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
+        Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(onlineSale);
-        kafkaTemplate.send("backorder", msg);
+
+        ResponseEntity<String> productResponse = null;
+        try {
+            productResponse = restTemplate.postForEntity(POSTBACKORDER, msg, String.class);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+        if(productResponse == null) {
+            throw new IllegalStateException("Product response was empty, please check that procurement service is running and Kafka is running");
+        }
 
         return onlineSale;
     }

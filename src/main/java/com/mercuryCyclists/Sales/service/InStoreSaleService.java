@@ -1,9 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.entity.Store;
@@ -28,14 +25,13 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
-    private final KafkaTemplate<String, String> kafkaTemplate;
-
+    private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
+    private static final RestTemplate restTemplate = new RestTemplate();
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
-        this.kafkaTemplate = kafkaTemplate;
     }
 
     /**
@@ -157,7 +153,7 @@ public class InStoreSaleService {
      * saves online sale and publishes to kafka
      * @param inStoreSale backorder to be saved
      */
-    public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId){
+    public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId) {
         if (!inStoreSale.validate()) {
             throw new IllegalStateException("Invalid online sale");
         }
@@ -166,6 +162,7 @@ public class InStoreSaleService {
         if (!store.isPresent()) {
             throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
         }
+        inStoreSale.setStore(store.get());
 
         JsonObject product = saleService.getSaleProduct(inStoreSale);
         if(product.get("id") == null){
@@ -173,9 +170,21 @@ public class InStoreSaleService {
         }
 
         inStoreSaleRepository.save(inStoreSale);
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
+        Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(inStoreSale);
-        kafkaTemplate.send("backorder", msg);
+
+        ResponseEntity<String> productResponse = null;
+        try {
+            productResponse = restTemplate.postForEntity(POSTBACKORDER, msg, String.class);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+        if(productResponse == null) {
+            throw new IllegalStateException("Product response was empty, please check that procurement service is running and Kafka is running");
+        }
 
         return inStoreSale;
     }
