@@ -97,76 +97,25 @@ public class InStoreSaleService {
             throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
         }
 
-//        // Check product exists
-//        JsonObject product = saleService.getSaleProduct(inStoreSale);
-//        if(product.get("id") == null){
-//            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
-//        }
-//
-//        // If there is enough of the product is stock
-//        Long productQuantity = product.get("quantity").getAsLong();
-//        Long saleQuantity = inStoreSale.getQuantity();
-
-        JsonObject product = saleService.getSaleProductWithQuantity(inStoreSale);
-        if (product != null) {
-            // Update and save product
-//            product.addProperty("quantity", (productQuantity - saleQuantity));
+        JsonObject product = saleService.getSaleProduct(inStoreSale);
+        if (product == null) return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+        if (product.get("quantity").getAsLong() >= inStoreSale.getQuantity()) {
             product.addProperty("quantity", (product.get("quantity").getAsLong() - inStoreSale.getQuantity()));
             saleService.updateProduct(product);
-
-            // Save and return sale
-            inStoreSale.setStore(store.get());
-            inStoreSaleRepository.save(inStoreSale);
-            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
-        }
-        product = saleService.getSaleProduct(inStoreSale);
-        if (product == null) return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
-        JsonArray productParts = saleService.getSaleProductPartsWithQuantity(inStoreSale);
-        if (productParts == null) {
-            return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
-        }
-        for (JsonElement part : productParts) {
-            JsonObject partJsonObj = part.getAsJsonObject();
-            partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - inStoreSale.getQuantity());
-            saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
+        } else {
+            JsonArray productParts = saleService.getSaleProductPartsWithQuantity(inStoreSale);
+            if (productParts == null) {
+                return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+            }
+            for (JsonElement part : productParts) {
+                JsonObject partJsonObj = part.getAsJsonObject();
+                partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - inStoreSale.getQuantity());
+                saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
+            }
         }
         inStoreSale.setStore(store.get());
         inStoreSaleRepository.save(inStoreSale);
         return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
-//        else {
-//            // Get product parts
-//            JsonArray productParts = saleService.getSaleProductParts(inStoreSale);
-//            ArrayList<JsonObject> partJsonObjs = new ArrayList<JsonObject>();
-//
-//            // For each part in the product
-//            for (JsonElement part : productParts) {
-//                // Convert json element to json object
-//                JsonObject partJsonObj = part.getAsJsonObject();
-//
-//                Long partQuantity = partJsonObj.get("quantity").getAsLong();
-//                if (partQuantity >= saleQuantity) {
-//                    // Update part quantity
-//                    partJsonObj.addProperty("quantity", (partQuantity - saleQuantity));
-//
-//                    // Save to ArrayList of JsonObjects
-//                    partJsonObjs.add(partJsonObj);
-//                } else {
-//                    // return 303 Error
-//                    return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
-//                }
-//            }
-//
-//            // For each json object part in json object part array list
-//            // Save the json object part
-//            for (JsonObject part : partJsonObjs) {
-//                saleService.updateProductPart(part);
-//            }
-//
-//            // Save and return sale
-//            inStoreSale.setStore(store.get());
-//            inStoreSaleRepository.save(inStoreSale);
-//            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
-//        }
     }
 
     /**

@@ -30,6 +30,6 @@ public abstract class Sale {
     private Date dateTime = new Date(System.currentTimeMillis());
 
     protected boolean validate(){
-        return quantity >= 0;
+        return dateTime != null && quantity >= 0;
     }
 }
