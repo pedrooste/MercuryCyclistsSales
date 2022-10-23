@@ -5,8 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
-import com.mercuryCyclists.Sales.entity.OnlineSale;
-import com.mercuryCyclists.Sales.entity.Sale;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
 import com.mercuryCyclists.Sales.repository.StoreRepository;
@@ -15,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -30,6 +27,7 @@ public class InStoreSaleService {
     private final StoreRepository storeRepository;
     private final SaleService saleService;
     private final KafkaTemplate<String, String> kafkaTemplate;
+
 
     @Autowired
     public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
@@ -115,6 +113,8 @@ public class InStoreSaleService {
         }
         inStoreSale.setStore(store.get());
         inStoreSaleRepository.save(inStoreSale);
+        kafkaTemplate.send("sales", new Gson().toJson(inStoreSale));
+
         return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
     }
 
@@ -142,6 +142,8 @@ public class InStoreSaleService {
         }
 
         inStoreSaleRepository.save(inStoreSale);
+        kafkaTemplate.send("sales", new Gson().toJson(inStoreSale));
+
 
         String msg = new Gson().toJson(inStoreSale);
         kafkaTemplate.send("backorder", msg);

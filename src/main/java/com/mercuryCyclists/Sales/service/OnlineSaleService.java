@@ -6,13 +6,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
-import org.hibernate.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -26,6 +24,7 @@ public class OnlineSaleService {
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
     private final KafkaTemplate<String, String> kafkaTemplate;
+
 
     @Autowired
     public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
@@ -82,6 +81,8 @@ public class OnlineSaleService {
 
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
+            // public sale to sales-topic
+            kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
             return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         }
         product = saleService.getSaleProduct(onlineSale);
@@ -95,58 +96,11 @@ public class OnlineSaleService {
             partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - onlineSale.getQuantity());
             saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
         }
+        // public sale to sales-topic
+
+        kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
         onlineSaleRepository.save(onlineSale);
         return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
-
-//        // Check product exists
-//        JsonObject product = saleService.getSaleProduct(onlineSale);
-//        if(product.get("id") == null){
-//            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
-//        }
-//        // If there is enough of the product is stock
-//        Long productQuantity = product.get("quantity").getAsLong();
-//        Long saleQuantity = onlineSale.getQuantity();
-//        if (productQuantity >= saleQuantity) {
-//            // Update and save product
-//            product.addProperty("quantity", (productQuantity - saleQuantity));
-//            saleService.updateProduct(product);
-//
-//            // Save and return sale
-//            onlineSaleRepository.save(onlineSale);
-//            return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
-//        } else {
-//            // Get product parts
-//            JsonArray productParts = saleService.getSaleProductParts(onlineSale);
-//            ArrayList<JsonObject> partJsonObjs = new ArrayList<JsonObject>();
-//
-//            // For each part in the product
-//            for (JsonElement part : productParts) {
-//                // Convert json element to json object
-//                JsonObject partJsonObj = part.getAsJsonObject();
-//
-//                Long partQuantity = partJsonObj.get("quantity").getAsLong();
-//                if (partQuantity >= saleQuantity) {
-//                    // Update part quantity
-//                    partJsonObj.addProperty("quantity", (partQuantity - saleQuantity));
-//
-//                    // Save to ArrayList of JsonObjects
-//                    partJsonObjs.add(partJsonObj);
-//                } else {
-//                    // return 303 Error
-//                    return new ResponseEntity<>("api/v1/online/online-sale/backorder", HttpStatus.SEE_OTHER);
-//                }
-//            }
-//
-//            // For each json object part in json object part array list
-//            // Save the json object part
-//            for (JsonObject part : partJsonObjs) {
-//                saleService.updateProductPart(part);
-//            }
-//
-//            // Save and return sale
-//            onlineSaleRepository.save(onlineSale);
-//            return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
-//        }
     }
 
     /**
@@ -167,6 +121,7 @@ public class OnlineSaleService {
         }
 
         onlineSaleRepository.save(onlineSale);
+        kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
 
         String msg = new Gson().toJson(onlineSale);
         kafkaTemplate.send("backorder", msg);
