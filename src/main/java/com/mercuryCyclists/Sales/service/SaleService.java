@@ -25,7 +25,7 @@ public class SaleService {
     private static final String GETPRODUCT = "http://localhost:8081/api/v1/product/{productId}";
     private static final String GETPRODUCTPARTS = "http://localhost:8081/api/v1/product/{productId}/all-parts";
     private static final String UPDATEPRODUCT = "http://localhost:8081/api/v1/product/{productId}";
-    private static final String UPDATEPART = "http://localhost:8081/api/v1/product/part/{partId}"; // wrong path
+//    private static final String UPDATEPART = "http://localhost:8081/api/v1/product/part/{partId}"; // wrong path
     private static final String NEWUPDATEPATH = "http://localhost:8081/api/v1/product/{productId}/part/{partId}";
     private static final String GETPRODUCTWITHQUANTITY = "http://localhost:8081/api/v1/product/{productId}/quantity/{quantity}";
     private static final String GETALLPARTSBYPRODUCTIDWITHQUANTITY = "http://localhost:8081/api/v1/product/{productId}/part/quantity/{quantity}";

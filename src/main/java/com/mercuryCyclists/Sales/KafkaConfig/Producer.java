@@ -13,7 +13,7 @@ import java.util.Map;
 public class Producer {
      public Map<String, Object> producerConfig() {
         Map<String, Object> map = new HashMap<>();
-        map.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        map.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
          map.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
          map.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
          return map;

@@ -74,8 +74,6 @@ public class OnlineSaleService {
         }
         JsonObject product = saleService.getSaleProductWithQuantity(onlineSale);
         if (product != null) {
-            // Update and save product
-//            product.addProperty("quantity", (productQuantity - saleQuantity));
             product.addProperty("quantity", (product.get("quantity").getAsLong() - onlineSale.getQuantity()));
             saleService.updateProduct(product);
 
