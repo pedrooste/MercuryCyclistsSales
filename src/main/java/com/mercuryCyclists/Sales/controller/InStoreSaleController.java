@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Controller for in store sale
@@ -56,7 +57,7 @@ public class InStoreSaleController {
      * @return
      */
     @GetMapping(path = "{id}/product")
-    public ResponseEntity<String> getProductBySale(@PathVariable("id") Long id)  {
+    public ResponseEntity<String> getProductBySale(@PathVariable("id") UUID id)  {
         //check that the sale exists
         InStoreSale s = inStoreSaleService.getInstoreSale(id);
         //if the sale exists get the product associated with the sale by ID

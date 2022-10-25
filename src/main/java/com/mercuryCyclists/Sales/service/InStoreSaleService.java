@@ -48,7 +48,7 @@ public class InStoreSaleService {
     /**
      * Get sale by id
      */
-    public InStoreSale getInstoreSale(Long id) {
+    public InStoreSale getInstoreSale(UUID id) {
 
         Optional<InStoreSale> s = inStoreSaleRepository.findById(id);
         if(!s.isPresent()) {
