@@ -1,3 +1,4 @@
+/*
 package com.mercuryCyclists.Sales.KafkaConfig;
 
 import org.apache.kafka.clients.admin.NewTopic;
@@ -12,3 +13,4 @@ public class Topic {
         return TopicBuilder.name("sales").build();
     }
 }
+*/

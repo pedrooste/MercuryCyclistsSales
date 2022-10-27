@@ -120,9 +120,9 @@ public class SaleService {
         }
     }
 
-    /**
+/*    *//**
      * Updates a product's part from a part JsonObject
-     */
+     *//*
     void updateProductPart(JsonObject part) {
         Map<String, String> params = new HashMap<>();
         params.put("partId", part.get("id").toString());
@@ -135,7 +135,7 @@ public class SaleService {
         } catch(Exception exception) {
             throw new IllegalArgumentException(String.format("Failed to update part with id: %d, exception: %s", part.get("id").getAsLong(), exception));
         }
-    }
+    }*/
 
     /**
      * Updates a product's part from a part JsonObject

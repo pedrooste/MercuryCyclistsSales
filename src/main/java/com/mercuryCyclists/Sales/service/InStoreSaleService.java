@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
+import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
 import com.mercuryCyclists.Sales.repository.StoreRepository;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.*;
 
@@ -27,14 +29,18 @@ public class InStoreSaleService {
     private final StoreRepository storeRepository;
     private final SaleService saleService;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final StreamBridge streamBridge;
 
 
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository,
+                              SaleService saleService, KafkaTemplate<String, String> kafkaTemplate,
+                              StreamBridge streamBridge) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
         this.kafkaTemplate = kafkaTemplate;
+        this.streamBridge = streamBridge;
     }
 
     /**
@@ -113,7 +119,18 @@ public class InStoreSaleService {
         }
         inStoreSale.setStore(store.get());
         inStoreSaleRepository.save(inStoreSale);
-        kafkaTemplate.send("sales", new Gson().toJson(inStoreSale));
+
+        // Create and populate sale event
+        SaleEvent saleEvent = new SaleEvent();
+        saleEvent.setProductName(product.get("name").getAsString());
+        saleEvent.setQuantity(inStoreSale.getQuantity());
+        Double pricePerProduct = product.get("price").getAsDouble();
+        Double totalSalePrice = pricePerProduct * inStoreSale.getQuantity();
+        saleEvent.setPrice(totalSalePrice);
+
+        System.out.println(saleEvent);
+
+        streamBridge.send("sale-outbound", saleEvent);
 
         return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
     }
@@ -142,8 +159,18 @@ public class InStoreSaleService {
         }
 
         inStoreSaleRepository.save(inStoreSale);
-        kafkaTemplate.send("sales", new Gson().toJson(inStoreSale));
 
+        // Create and populate sale event
+        SaleEvent saleEvent = new SaleEvent();
+        saleEvent.setProductName(product.get("name").getAsString());
+        saleEvent.setQuantity(inStoreSale.getQuantity());
+        Double pricePerProduct = product.get("price").getAsDouble();
+        Double totalSalePrice = pricePerProduct * inStoreSale.getQuantity();
+        saleEvent.setPrice(totalSalePrice);
+
+        System.out.println(saleEvent);
+
+        streamBridge.send("sale-outbound", saleEvent);
 
         String msg = new Gson().toJson(inStoreSale);
         kafkaTemplate.send("backorder", msg);
