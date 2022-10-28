@@ -5,12 +5,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
+import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.*;
 
@@ -24,13 +26,16 @@ public class OnlineSaleService {
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final StreamBridge streamBridge;
 
 
     @Autowired
-    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService, KafkaTemplate<String, String> kafkaTemplate) {
+    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService,
+                             KafkaTemplate<String, String> kafkaTemplate, StreamBridge streamBridge) {
         this.onlineSaleRepository = onlineSaleRepository;
         this.saleService = saleService;
         this.kafkaTemplate = kafkaTemplate;
+        this.streamBridge = streamBridge;
     }
 
     /**
@@ -79,8 +84,12 @@ public class OnlineSaleService {
 
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
-            // public sale to sales-topic
-            kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
+
+            streamBridge.send("sale-outbound",
+                    saleService.createSaleEvent(onlineSale,
+                            product.get("name").getAsString(),
+                            product.get("price").getAsDouble()));
+
             return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         }
         product = saleService.getSaleProduct(onlineSale);
@@ -94,9 +103,12 @@ public class OnlineSaleService {
             partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - onlineSale.getQuantity());
             saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
         }
-        // public sale to sales-topic
 
-        kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+
         onlineSaleRepository.save(onlineSale);
         return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
     }
@@ -119,7 +131,11 @@ public class OnlineSaleService {
         }
 
         onlineSaleRepository.save(onlineSale);
-        kafkaTemplate.send("sales", new Gson().toJson(onlineSale));
+
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
 
         String msg = new Gson().toJson(onlineSale);
         kafkaTemplate.send("backorder", msg);
