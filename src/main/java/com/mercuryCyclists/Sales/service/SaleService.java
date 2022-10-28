@@ -145,8 +145,7 @@ public class SaleService {
         SaleEvent saleEvent = new SaleEvent();
         saleEvent.setProductName(productName);
         saleEvent.setQuantity(sale.getQuantity());
-        Double totalSalePrice = pricePerProduct * sale.getQuantity();
-        saleEvent.setPrice(totalSalePrice);
+        saleEvent.setPrice(pricePerProduct);
         return saleEvent;
     }
 }
