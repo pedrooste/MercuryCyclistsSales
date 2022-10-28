@@ -1,5 +1,8 @@
 package com.mercuryCyclists.Sales.entity;
 
+/**
+ * SaleEvent Entity
+ */
 public class SaleEvent {
     private String productName;
     private Long quantity;

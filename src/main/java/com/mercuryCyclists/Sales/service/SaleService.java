@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mercuryCyclists.Sales.entity.Sale;
+import com.mercuryCyclists.Sales.entity.SaleEvent;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -25,8 +26,7 @@ public class SaleService {
     private static final String GETPRODUCT = "http://localhost:8081/api/v1/product/{productId}";
     private static final String GETPRODUCTPARTS = "http://localhost:8081/api/v1/product/{productId}/all-parts";
     private static final String UPDATEPRODUCT = "http://localhost:8081/api/v1/product/{productId}";
-//    private static final String UPDATEPART = "http://localhost:8081/api/v1/product/part/{partId}"; // wrong path
-    private static final String NEWUPDATEPATH = "http://localhost:8081/api/v1/product/{productId}/part/{partId}";
+    private static final String UPDATEPART = "http://localhost:8081/api/v1/product/{productId}/part/{partId}";
     private static final String GETPRODUCTWITHQUANTITY = "http://localhost:8081/api/v1/product/{productId}/quantity/{quantity}";
     private static final String GETALLPARTSBYPRODUCTIDWITHQUANTITY = "http://localhost:8081/api/v1/product/{productId}/part/quantity/{quantity}";
     private static final RestTemplate restTemplate = new RestTemplate();
@@ -120,23 +120,6 @@ public class SaleService {
         }
     }
 
-/*    *//**
-     * Updates a product's part from a part JsonObject
-     *//*
-    void updateProductPart(JsonObject part) {
-        Map<String, String> params = new HashMap<>();
-        params.put("partId", part.get("id").toString());
-
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<String> entity = new HttpEntity<>(part.toString(), headers);
-            restTemplate.exchange(UPDATEPART, HttpMethod.PUT, entity, String.class, params);
-        } catch(Exception exception) {
-            throw new IllegalArgumentException(String.format("Failed to update part with id: %d, exception: %s", part.get("id").getAsLong(), exception));
-        }
-    }*/
-
     /**
      * Updates a product's part from a part JsonObject
      */
@@ -149,9 +132,21 @@ public class SaleService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<String> entity = new HttpEntity<>(part.toString(), headers);
-            restTemplate.exchange(NEWUPDATEPATH, HttpMethod.PUT, entity, String.class, params);
+            restTemplate.exchange(UPDATEPART, HttpMethod.PUT, entity, String.class, params);
         } catch(Exception exception) {
             throw new IllegalArgumentException(String.format("Failed to update part with id: %d, exception: %s", part.get("id").getAsLong(), exception));
         }
+    }
+
+    /**
+     * Creates and returns a SaleEvent object
+     */
+    SaleEvent createSaleEvent(Sale sale, String productName, Double pricePerProduct) {
+        SaleEvent saleEvent = new SaleEvent();
+        saleEvent.setProductName(productName);
+        saleEvent.setQuantity(sale.getQuantity());
+        Double totalSalePrice = pricePerProduct * sale.getQuantity();
+        saleEvent.setPrice(totalSalePrice);
+        return saleEvent;
     }
 }

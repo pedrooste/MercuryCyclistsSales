@@ -85,17 +85,10 @@ public class OnlineSaleService {
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
 
-            // Create and populate sale event
-            SaleEvent saleEvent = new SaleEvent();
-            saleEvent.setProductName(product.get("name").getAsString());
-            saleEvent.setQuantity(onlineSale.getQuantity());
-            Double pricePerProduct = product.get("price").getAsDouble();
-            Double totalSalePrice = pricePerProduct * onlineSale.getQuantity();
-            saleEvent.setPrice(totalSalePrice);
-
-            System.out.println(saleEvent);
-
-            streamBridge.send("sale-outbound", saleEvent);
+            streamBridge.send("sale-outbound",
+                    saleService.createSaleEvent(onlineSale,
+                            product.get("name").getAsString(),
+                            product.get("price").getAsDouble()));
 
             return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         }
@@ -111,17 +104,10 @@ public class OnlineSaleService {
             saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
         }
 
-        // Create and populate sale event
-        SaleEvent saleEvent = new SaleEvent();
-        saleEvent.setProductName(product.get("name").getAsString());
-        saleEvent.setQuantity(onlineSale.getQuantity());
-        Double pricePerProduct = product.get("price").getAsDouble();
-        Double totalSalePrice = pricePerProduct * onlineSale.getQuantity();
-        saleEvent.setPrice(totalSalePrice);
-
-        System.out.println(saleEvent);
-
-        streamBridge.send("sale-outbound", saleEvent);
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
 
         onlineSaleRepository.save(onlineSale);
         return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
@@ -146,17 +132,10 @@ public class OnlineSaleService {
 
         onlineSaleRepository.save(onlineSale);
 
-        // Create and populate sale event
-        SaleEvent saleEvent = new SaleEvent();
-        saleEvent.setProductName(product.get("name").getAsString());
-        saleEvent.setQuantity(onlineSale.getQuantity());
-        Double pricePerProduct = product.get("price").getAsDouble();
-        Double totalSalePrice = pricePerProduct * onlineSale.getQuantity();
-        saleEvent.setPrice(totalSalePrice);
-
-        System.out.println(saleEvent);
-
-        streamBridge.send("sale-outbound", saleEvent);
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
 
         String msg = new Gson().toJson(onlineSale);
         kafkaTemplate.send("backorder", msg);

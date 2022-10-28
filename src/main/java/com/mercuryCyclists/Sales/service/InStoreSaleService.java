@@ -120,17 +120,10 @@ public class InStoreSaleService {
         inStoreSale.setStore(store.get());
         inStoreSaleRepository.save(inStoreSale);
 
-        // Create and populate sale event
-        SaleEvent saleEvent = new SaleEvent();
-        saleEvent.setProductName(product.get("name").getAsString());
-        saleEvent.setQuantity(inStoreSale.getQuantity());
-        Double pricePerProduct = product.get("price").getAsDouble();
-        Double totalSalePrice = pricePerProduct * inStoreSale.getQuantity();
-        saleEvent.setPrice(totalSalePrice);
-
-        System.out.println(saleEvent);
-
-        streamBridge.send("sale-outbound", saleEvent);
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
 
         return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
     }
@@ -160,17 +153,10 @@ public class InStoreSaleService {
 
         inStoreSaleRepository.save(inStoreSale);
 
-        // Create and populate sale event
-        SaleEvent saleEvent = new SaleEvent();
-        saleEvent.setProductName(product.get("name").getAsString());
-        saleEvent.setQuantity(inStoreSale.getQuantity());
-        Double pricePerProduct = product.get("price").getAsDouble();
-        Double totalSalePrice = pricePerProduct * inStoreSale.getQuantity();
-        saleEvent.setPrice(totalSalePrice);
-
-        System.out.println(saleEvent);
-
-        streamBridge.send("sale-outbound", saleEvent);
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
 
         String msg = new Gson().toJson(inStoreSale);
         kafkaTemplate.send("backorder", msg);
