@@ -28,13 +28,13 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, byte[]> kafkaTemplate;
     private final StreamBridge streamBridge;
 
 
     @Autowired
     public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository,
-                              SaleService saleService, KafkaTemplate<String, String> kafkaTemplate,
+                              SaleService saleService, KafkaTemplate<String, byte[]> kafkaTemplate,
                               StreamBridge streamBridge) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
@@ -159,7 +159,7 @@ public class InStoreSaleService {
                     product.get("price").getAsDouble()));
 
         String msg = new Gson().toJson(inStoreSale);
-        kafkaTemplate.send("backorder", msg);
+        kafkaTemplate.send("backorder", msg.getBytes());
 
         return inStoreSale;
     }
