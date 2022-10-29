@@ -13,7 +13,6 @@ import java.util.Objects;
 @NoArgsConstructor
 @Getter
 @Setter
-@ToString
 @Entity
 @Table(name = "in_store_sale")
 public class InStoreSale extends Sale {
@@ -39,5 +38,11 @@ public class InStoreSale extends Sale {
     @Override
     public int hashCode() {
         return Objects.hash(receiptNo);
+    }
+
+    @Override
+    public String toString(){
+        return String.format("Id: %s, Receipt: %s, StoreId: %s, productId: %s, Quantity: %s, Date: %s",
+                this.getId(), this.getReceiptNo(), this.getStore().getId(), this.getProductId(), this.getQuantity(), this.getDateTime().toString());
     }
 }

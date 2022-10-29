@@ -11,7 +11,6 @@ import javax.persistence.Table;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
 @Getter
 @Setter
 @Entity
@@ -25,6 +24,12 @@ public class OnlineSale extends Sale {
 
     public boolean validate(){
         return super.validate() && customerName != null && address != null;
+    }
+
+    @Override
+    public String toString(){
+        return String.format("Id: %s, Name: %s, Address: %s, productId: %s, Quantity: %s, Date: %s",
+                this.getId(), this.getCustomerName(), this.getAddress(), this.getProductId(), this.getQuantity(), this.getDateTime().toString());
     }
 
 }
