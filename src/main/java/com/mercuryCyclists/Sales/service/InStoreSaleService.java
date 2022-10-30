@@ -151,7 +151,11 @@ public class InStoreSaleService {
         inStoreSaleRepository.save(inStoreSale);
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
-
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+        
         Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(inStoreSale);
 
