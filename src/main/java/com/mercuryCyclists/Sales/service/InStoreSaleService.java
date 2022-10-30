@@ -2,7 +2,7 @@ package com.mercuryCyclists.Sales.service;
 
 import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
-import com.mercuryCyclists.Sales.entity.OnlineSale;
+import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.entity.Store;
 import com.mercuryCyclists.Sales.repository.InStoreSaleRepository;
 import com.mercuryCyclists.Sales.repository.StoreRepository;
@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.*;
 
@@ -25,6 +25,7 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
+
     private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
     private static final RestTemplate restTemplate = new RestTemplate();
     @Autowired
@@ -44,10 +45,10 @@ public class InStoreSaleService {
     /**
      * Get sale by id
      */
-    public InStoreSale getInstoreSale(Long id) {
+    public InStoreSale getInstoreSale(UUID id) {
 
         Optional<InStoreSale> s = inStoreSaleRepository.findById(id);
-        if(!s.isPresent()) {
+        if (!s.isPresent()) {
             throw new IllegalArgumentException("Sale with ID does not exist");
         }
         return s.get();
@@ -57,7 +58,7 @@ public class InStoreSaleService {
      * Get Product by sale
      */
     public ResponseEntity<String> getProductBySaleId(InStoreSale s) {
-        if(s == null) {
+        if (s == null) {
             return new ResponseEntity<>("Invalid Sale Id", HttpStatus.FAILED_DEPENDENCY);
         }
         //query product endpoint with productID
@@ -92,58 +93,31 @@ public class InStoreSaleService {
             throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
         }
 
-        // Check product exists
         JsonObject product = saleService.getSaleProduct(inStoreSale);
-        if(product.get("id") == null){
-            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
-        }
-
-        // If there is enough of the product is stock
-        Long productQuantity = product.get("quantity").getAsLong();
-        Long saleQuantity = inStoreSale.getQuantity();
-        if (productQuantity >= saleQuantity) {
-            // Update and save product
-            product.addProperty("quantity", (productQuantity - saleQuantity));
+        if (product == null) return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+        if (product.get("quantity").getAsLong() >= inStoreSale.getQuantity()) {
+            product.addProperty("quantity", (product.get("quantity").getAsLong() - inStoreSale.getQuantity()));
             saleService.updateProduct(product);
-
-            // Save and return sale
-            inStoreSale.setStore(store.get());
-            inStoreSaleRepository.save(inStoreSale);
-            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
         } else {
-            // Get product parts
-            JsonArray productParts = saleService.getSaleProductParts(inStoreSale);
-            ArrayList<JsonObject> partJsonObjs = new ArrayList<JsonObject>();
-
-            // For each part in the product
+            JsonArray productParts = saleService.getSaleProductPartsWithQuantity(inStoreSale);
+            if (productParts == null) {
+                return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+            }
             for (JsonElement part : productParts) {
-                // Convert json element to json object
                 JsonObject partJsonObj = part.getAsJsonObject();
-
-                Long partQuantity = partJsonObj.get("quantity").getAsLong();
-                if (partQuantity >= saleQuantity) {
-                    // Update part quantity
-                    partJsonObj.addProperty("quantity", (partQuantity - saleQuantity));
-
-                    // Save to ArrayList of JsonObjects
-                    partJsonObjs.add(partJsonObj);
-                } else {
-                    // return 303 Error
-                    return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
-                }
+                partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - inStoreSale.getQuantity());
+                saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
             }
-
-            // For each json object part in json object part array list
-            // Save the json object part
-            for (JsonObject part : partJsonObjs) {
-                saleService.updateProductPart(part);
-            }
-
-            // Save and return sale
-            inStoreSale.setStore(store.get());
-            inStoreSaleRepository.save(inStoreSale);
-            return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
         }
+        inStoreSale.setStore(store.get());
+        inStoreSaleRepository.save(inStoreSale);
+
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+
+        return new ResponseEntity<>(inStoreSale.toString(), HttpStatus.CREATED);
     }
 
     /**
@@ -151,6 +125,7 @@ public class InStoreSaleService {
      * Validates the sale
      * Gets the sale's product, validates it exists
      * saves online sale and publishes to kafka
+     *
      * @param inStoreSale backorder to be saved
      */
     public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId) {
@@ -165,12 +140,13 @@ public class InStoreSaleService {
         inStoreSale.setStore(store.get());
 
         JsonObject product = saleService.getSaleProduct(inStoreSale);
-        if(product.get("id") == null){
+        if (product.get("id") == null) {
             throw new IllegalArgumentException(String.format("Invalid product, %s", product));
         }
 
         inStoreSaleRepository.save(inStoreSale);
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
+
 
         Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(inStoreSale);
@@ -185,6 +161,7 @@ public class InStoreSaleService {
         if(productResponse == null) {
             throw new IllegalStateException("Product response was empty, please check that procurement service is running and Kafka is running");
         }
+
 
         return inStoreSale;
     }

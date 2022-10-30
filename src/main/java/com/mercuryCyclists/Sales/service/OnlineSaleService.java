@@ -2,14 +2,14 @@ package com.mercuryCyclists.Sales.service;
 
 import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
+import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
-import org.hibernate.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.*;
 
@@ -22,6 +22,7 @@ public class OnlineSaleService {
 
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
+
     private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
     private static final RestTemplate restTemplate = new RestTemplate();
 
@@ -40,7 +41,7 @@ public class OnlineSaleService {
     /**
      * Get sale by id
      */
-    public OnlineSale getOnlineSale(Long id) {
+    public OnlineSale getOnlineSale(UUID id) {
 
         Optional<OnlineSale> s = onlineSaleRepository.findById(id);
         if(!s.isPresent()) {
@@ -70,56 +71,40 @@ public class OnlineSaleService {
         if (!onlineSale.validate()) {
             throw new IllegalStateException("Invalid Online Sale");
         }
-
-        // Check product exists
-        JsonObject product = saleService.getSaleProduct(onlineSale);
-        if(product.get("id") == null){
-            throw new IllegalArgumentException(String.format("Invalid product, %s", product));
-        }
-        // If there is enough of the product is stock
-        Long productQuantity = product.get("quantity").getAsLong();
-        Long saleQuantity = onlineSale.getQuantity();
-        if (productQuantity >= saleQuantity) {
-            // Update and save product
-            product.addProperty("quantity", (productQuantity - saleQuantity));
+        JsonObject product = saleService.getSaleProductWithQuantity(onlineSale);
+        if (product != null) {
+            product.addProperty("quantity", (product.get("quantity").getAsLong() - onlineSale.getQuantity()));
             saleService.updateProduct(product);
 
             // Save and return sale
             onlineSaleRepository.save(onlineSale);
-            return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
-        } else {
-            // Get product parts
-            JsonArray productParts = saleService.getSaleProductParts(onlineSale);
-            ArrayList<JsonObject> partJsonObjs = new ArrayList<JsonObject>();
 
-            // For each part in the product
-            for (JsonElement part : productParts) {
-                // Convert json element to json object
-                JsonObject partJsonObj = part.getAsJsonObject();
+            streamBridge.send("sale-outbound",
+                    saleService.createSaleEvent(onlineSale,
+                            product.get("name").getAsString(),
+                            product.get("price").getAsDouble()));
 
-                Long partQuantity = partJsonObj.get("quantity").getAsLong();
-                if (partQuantity >= saleQuantity) {
-                    // Update part quantity
-                    partJsonObj.addProperty("quantity", (partQuantity - saleQuantity));
-
-                    // Save to ArrayList of JsonObjects
-                    partJsonObjs.add(partJsonObj);
-                } else {
-                    // return 303 Error
-                    return new ResponseEntity<>("api/v1/online/online-sale/backorder", HttpStatus.SEE_OTHER);
-                }
-            }
-
-            // For each json object part in json object part array list
-            // Save the json object part
-            for (JsonObject part : partJsonObjs) {
-                saleService.updateProductPart(part);
-            }
-
-            // Save and return sale
-            onlineSaleRepository.save(onlineSale);
             return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
         }
+        product = saleService.getSaleProduct(onlineSale);
+        if (product == null) return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+        JsonArray productParts = saleService.getSaleProductPartsWithQuantity(onlineSale);
+        if (productParts == null) {
+            return new ResponseEntity<>("api/v1/online/in-store-sale/backorder", HttpStatus.SEE_OTHER);
+        }
+        for (JsonElement part : productParts) {
+            JsonObject partJsonObj = part.getAsJsonObject();
+            partJsonObj.addProperty("quantity", partJsonObj.get("quantity").getAsLong() - onlineSale.getQuantity());
+            saleService.updateProductPart(product.get("id").getAsString(), partJsonObj);
+        }
+
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+
+        onlineSaleRepository.save(onlineSale);
+        return new ResponseEntity<>(onlineSale.toString(), HttpStatus.CREATED);
     }
 
     /**
