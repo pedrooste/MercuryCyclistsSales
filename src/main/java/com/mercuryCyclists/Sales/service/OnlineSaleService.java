@@ -125,11 +125,17 @@ public class OnlineSaleService {
         }
 
         onlineSaleRepository.save(onlineSale);
+        
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+                    
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
-
+    
         Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(onlineSale);
-
+    
         ResponseEntity<String> productResponse = null;
         try {
             productResponse = restTemplate.postForEntity(POSTBACKORDER, msg, String.class);
