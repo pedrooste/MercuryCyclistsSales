@@ -68,7 +68,7 @@ public class InStoreSaleController {
      * Create backorder for in store sale
      */
     @PostMapping(path = "/backorder/store/{storeId}")
-    public InStoreSale createBackorder(@RequestBody InStoreSale inStoreSale, @PathVariable("storeId") Long storeId) {
+    public InStoreSale acceptBackorder(@RequestBody InStoreSale inStoreSale, @PathVariable("storeId") Long storeId) {
         return inStoreSaleService.registerBackorder(inStoreSale, storeId);
     }
 }

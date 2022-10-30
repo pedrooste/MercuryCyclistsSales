@@ -1,9 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.InStoreSale;
 import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.entity.Store;
@@ -15,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -28,18 +26,16 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
-    private final KafkaTemplate<String, byte[]> kafkaTemplate;
     private final StreamBridge streamBridge;
 
-
+    private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
+    private static final RestTemplate restTemplate = new RestTemplate();
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository,
-                              SaleService saleService, KafkaTemplate<String, byte[]> kafkaTemplate,
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService,
                               StreamBridge streamBridge) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
-        this.kafkaTemplate = kafkaTemplate;
         this.streamBridge = streamBridge;
     }
 
@@ -138,13 +134,14 @@ public class InStoreSaleService {
      */
     public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId) {
         if (!inStoreSale.validate()) {
-            throw new IllegalStateException("Invalid online sale");
+            throw new IllegalStateException("Invalid instore sale");
         }
 
         Optional<Store> store = storeRepository.findById(storeId);
         if (!store.isPresent()) {
             throw new IllegalStateException(String.format("Store with Id %s does not exist", storeId));
         }
+        inStoreSale.setStore(store.get());
 
         JsonObject product = saleService.getSaleProduct(inStoreSale);
         if (product.get("id") == null) {
@@ -152,14 +149,27 @@ public class InStoreSaleService {
         }
 
         inStoreSaleRepository.save(inStoreSale);
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
         streamBridge.send("sale-outbound",
                 saleService.createSaleEvent(inStoreSale,
                     product.get("name").getAsString(),
                     product.get("price").getAsDouble()));
-
+        
+        Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(inStoreSale);
-        kafkaTemplate.send("backorder", msg.getBytes());
+
+        ResponseEntity<String> productResponse = null;
+        try {
+            productResponse = restTemplate.postForEntity(POSTBACKORDER, msg, String.class);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+        if(productResponse == null) {
+            throw new IllegalStateException("Product response was empty, please check that procurement service is running and Kafka is running");
+        }
+
 
         return inStoreSale;
     }

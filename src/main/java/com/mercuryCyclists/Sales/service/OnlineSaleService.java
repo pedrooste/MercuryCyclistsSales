@@ -1,9 +1,6 @@
 package com.mercuryCyclists.Sales.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import com.mercuryCyclists.Sales.entity.OnlineSale;
 import com.mercuryCyclists.Sales.entity.SaleEvent;
 import com.mercuryCyclists.Sales.repository.OnlineSaleRepository;
@@ -13,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -25,16 +23,16 @@ public class OnlineSaleService {
 
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
-    private final KafkaTemplate<String, byte[]> kafkaTemplate;
     private final StreamBridge streamBridge;
 
+    private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
+    private static final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
-    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService,
-                             KafkaTemplate<String, byte[]> kafkaTemplate, StreamBridge streamBridge) {
+    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository,
+                             SaleService saleService,  StreamBridge streamBridge) {
         this.onlineSaleRepository = onlineSaleRepository;
         this.saleService = saleService;
-        this.kafkaTemplate = kafkaTemplate;
         this.streamBridge = streamBridge;
     }
 
@@ -134,11 +132,24 @@ public class OnlineSaleService {
 
         streamBridge.send("sale-outbound",
                 saleService.createSaleEvent(onlineSale,
-                    product.get("name").getAsString(),
-                    product.get("price").getAsDouble()));
+                        product.get("name").getAsString(),
+                        product.get("price").getAsDouble()));
 
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
+    
+        Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(onlineSale);
-        kafkaTemplate.send("backorder", msg.getBytes());
+    
+        ResponseEntity<String> productResponse = null;
+        try {
+            productResponse = restTemplate.postForEntity(POSTBACKORDER, msg, String.class);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+
+        if(productResponse == null) {
+            throw new IllegalStateException("Product response was empty, please check that procurement service is running and Kafka is running");
+        }
 
         return onlineSale;
     }
