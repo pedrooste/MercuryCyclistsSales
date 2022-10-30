@@ -28,8 +28,9 @@ public class InStoreSaleService {
 
     private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
     private static final RestTemplate restTemplate = new RestTemplate();
+    private final StreamBridge streamBridge;
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService, StreamBridge streamBridge) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
@@ -147,7 +148,11 @@ public class InStoreSaleService {
         inStoreSaleRepository.save(inStoreSale);
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
-
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(inStoreSale,
+                    product.get("name").getAsString(),
+                    product.get("price").getAsDouble()));
+        
         Map<String, JsonObject> m = new HashMap<>();
         String msg = new Gson().toJson(inStoreSale);
 
