@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -25,14 +26,17 @@ public class InStoreSaleService {
     private final InStoreSaleRepository inStoreSaleRepository;
     private final StoreRepository storeRepository;
     private final SaleService saleService;
+    private final StreamBridge streamBridge;
 
     private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
     private static final RestTemplate restTemplate = new RestTemplate();
     @Autowired
-    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService) {
+    public InStoreSaleService(InStoreSaleRepository inStoreSaleRepository, StoreRepository storeRepository, SaleService saleService,
+                              StreamBridge streamBridge) {
         this.inStoreSaleRepository = inStoreSaleRepository;
         this.storeRepository = storeRepository;
         this.saleService = saleService;
+        this.streamBridge = streamBridge;
     }
 
     /**

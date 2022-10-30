@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -22,14 +23,17 @@ public class OnlineSaleService {
 
     private final OnlineSaleRepository onlineSaleRepository;
     private final SaleService saleService;
+    private final StreamBridge streamBridge;
 
     private static final String POSTBACKORDER = "http://localhost:8081/api/v1/product/backorder";
     private static final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
-    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository, SaleService saleService) {
+    public OnlineSaleService(OnlineSaleRepository onlineSaleRepository,
+                             SaleService saleService,  StreamBridge streamBridge) {
         this.onlineSaleRepository = onlineSaleRepository;
         this.saleService = saleService;
+        this.streamBridge = streamBridge;
     }
 
     /**
@@ -125,6 +129,11 @@ public class OnlineSaleService {
         }
 
         onlineSaleRepository.save(onlineSale);
+        streamBridge.send("sale-outbound",
+                saleService.createSaleEvent(onlineSale,
+                        product.get("name").getAsString(),
+                        product.get("price").getAsDouble()));
+
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd' 'HH:mm:ss").create();
 
         Map<String, JsonObject> m = new HashMap<>();
