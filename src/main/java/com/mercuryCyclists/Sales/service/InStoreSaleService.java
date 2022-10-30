@@ -134,7 +134,7 @@ public class InStoreSaleService {
      */
     public InStoreSale registerBackorder(InStoreSale inStoreSale, Long storeId) {
         if (!inStoreSale.validate()) {
-            throw new IllegalStateException("Invalid online sale");
+            throw new IllegalStateException("Invalid instore sale");
         }
 
         Optional<Store> store = storeRepository.findById(storeId);
